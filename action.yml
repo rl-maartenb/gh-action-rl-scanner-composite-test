@@ -1,0 +1,96 @@
+name: 'gh-action-rl-scanner-composite'
+author: 'ReversingLabs'
+description: 'Scan an artifact with ReversingLabs secure.software CLI'
+
+branding:
+  icon: 'shield'
+  color: 'purple'
+
+inputs:
+  artifact-to-scan:
+    description: 'Path to the package file (artifact) you want to scan'
+    required: true
+  ref-sha:
+    description: 'Reference SHA of the commit or a pull request'
+    required: false
+    default: ${{ github.event.pull_request.head.sha || github.sha }}
+  report-path:
+    description: 'Path to a directory where the reports will be saved (must be a new directory, with a path relative to the github.workspace)'
+    required: false
+    default: MyReportDir
+
+outputs:
+  description:
+    description: 'The result of the action: a string terminating in FAIL or PASS'
+    value: ${{ steps.scan.outputs.description }}
+  status:
+    description: 'The single word result of the action: success, failure or error'
+    value: ${{ steps.scan.outputs.status }}
+
+runs:
+  using: "composite"
+
+  steps:
+    # -------------------------------------------
+    # Set the analysis status to pending
+    - name: Set the pending status
+      uses: ouzi-dev/commit-status-updater@219d3f932547cad092e384c7a36bf4d963739c35 # v2.0.1
+      with:
+        addHoldComment: "true"
+
+    # -------------------------------------------
+    # Run the reversinglabs/rl-scanner
+    - name: Scan with rl-scanner
+      id: scan
+      shell: bash
+      run: $GITHUB_ACTION_PATH/doScanAction.sh -f "${{ inputs.artifact-to-scan }}" -r "${{ inputs.report-path }}"
+
+    # -------------------------------------
+    # Upload the secure.software report to GitHub
+    # Note: It is currently not possible to get the URL for the uploaded asset
+    - name: Upload the rl-scanner report
+      if: success() || failure()
+      uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
+
+      with:
+        name: "report-${{ inputs.ref-sha }}"
+        path: "${{ inputs.report-path }}"
+
+    # -------------------------------------
+    # Upload the secure.software SARIF report to GitHub
+    - name: Upload the SARIF report
+      if: success() || failure()
+      uses: github/codeql-action/upload-sarif@cdcdbb579706841c47f7063dda365e292e5cad7a # v2.13.4
+
+      with:
+        sarif_file: "${{ inputs.report-path }}/report.sarif.json"
+        category: rl-secure-scanner
+
+    # -------------------------------------
+    # Update the status from pending to failure/success and set the descriptive text
+    - name: Set the analysis status
+      if: success() || failure()
+      uses: ouzi-dev/commit-status-updater@219d3f932547cad092e384c7a36bf4d963739c35 # v2.0.1
+
+      with:
+        addHoldComment: "true"
+        description: ${{ steps.scan.outputs.description }}
+        status: ${{ steps.scan.outputs.status }}
+
+    # -------------------------------------
+    # Return the proper exit status
+    - name: Set the exit status
+      if: always()
+      shell: bash
+      run: |
+        case "${{ steps.scan.outputs.status }}" in
+        success)
+          exit 0
+          ;;
+        failure)
+          exit 1
+          ;;
+        *)
+          exit 101
+          ;;
+        esac
