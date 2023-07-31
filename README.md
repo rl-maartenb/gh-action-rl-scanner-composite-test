@@ -6,10 +6,10 @@ The `rl-scanner-composite` action uses the official [reversinglabs/rl-scanner](h
 The action also displays the SARIF report in a custom *Rl-Secure-Scanner* section of the Security tab in the GitHub repository.
 
 This action is most suitable for users who want to quickly set up a working security scanning solution.
-If you already manage workflows for different purposes and want to integrate security scanning as a step under specific conditions, try the [rl-scanner-simple](https://github.com/reversinglabs/gh-action-rl-scanner-simple) GitHub Action by ReversingLabs.
+If you already manage workflows for different purposes and want to integrate security scanning as a step under specific conditions, try the [rl-scanner-only](https://github.com/reversinglabs/gh-action-rl-scanner-only) GitHub Action by ReversingLabs.
 
-Compared to `rl-scanner-simple`, this action is more convenient out-of-the-box because it scans the artifact and uploads reports all at once. 
-In the `rl-scanner-simple` action, everything except the scan has to be provided by the user creating the workflow.
+Compared to `rl-scanner-only`, this action is more convenient out-of-the-box because it scans the artifact and uploads reports all at once. 
+In the `rl-scanner-only` action, everything except the scan has to be provided by the user creating the workflow.
 
 
 ## What is rl-secure?
@@ -187,6 +187,6 @@ jobs:
 
 - The official `reversinglabs/rl-scanner` Docker image [on Docker Hub](https://hub.docker.com/r/reversinglabs/rl-scanner)
 - [Supported file formats](https://docs.secure.software/concepts/filetypes) and [language coverage](https://docs.secure.software/concepts/language-coverage) for `rl-secure`
-- The [rl-scanner-simple](https://github.com/reversinglabs/gh-action-rl-scanner-simple) GitHub Action
+- The [rl-scanner-only](https://github.com/reversinglabs/gh-action-rl-scanner-only) GitHub Action
 - Introduction to [secure software release processes](https://www.reversinglabs.com/solutions/secure-software-release-processes) with ReversingLabs
 - [Software supply chain security for application security teams](https://3375217.fs1.hubspotusercontent-na1.net/hubfs/3375217/Documents/Business-Brief-Software-Supply-Chain-Security-for-Application-Security-Teams.pdf) (link to a PDF document)
