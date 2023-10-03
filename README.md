@@ -8,7 +8,7 @@ The action also displays the SARIF report in a custom *Rl-Secure-Scanner* sectio
 This action is most suitable for users who want to quickly set up a working security scanning solution.
 If you already manage workflows for different purposes and want to integrate security scanning as a step under specific conditions, try the [rl-scanner-only](https://github.com/reversinglabs/gh-action-rl-scanner-only) GitHub Action by ReversingLabs.
 
-Compared to `rl-scanner-only`, this action is more convenient out-of-the-box because it scans the artifact and uploads reports all at once. 
+Compared to `rl-scanner-only`, this action is more convenient out-of-the-box because it scans the artifact and uploads reports all at once.
 In the `rl-scanner-only` action, everything except the scan has to be provided by the user creating the workflow.
 
 
@@ -42,16 +42,16 @@ Optionally, users can specify the report directory name.
 If it is specified, the action saves all supported analysis report formats for the artifact into the report directory.
 The path must be relative to the `github.workspace`.
 
-If the report directory name is not specified, the action saves the analysis reports into the default directory. 
+If the report directory name is not specified, the action saves the analysis reports into the default directory.
 
 When called, the action runs the following steps:
 
 - Set the commit status to pending
 - Pull the latest version of the `reversinglabs/rl-scanner` Docker image and scan the build artifact inside a container
 - Upload the analysis report to GitHub as `report-sha`, where `sha` corresponds to the SHA identifier of the commit or PR that triggered the action. This makes the report names unique and helps relate them to specific commits if necessary
-- Upload the SARIF report file as `report.sarif.json ` to the report directory
+- Upload the SARIF report file as `report.sarif.json` to the report directory
 - Change the commit status from pending to success/failure depending on the scan result with a descriptive message
-- Return the exit status. This allows controlling any subsequent or dependent tasks; for example, blocking the merge if the status is not "success" 
+- Return the exit status. This allows controlling any subsequent or dependent tasks; for example, blocking the merge if the status is not "success"
 
 
 ## Requirements
@@ -83,32 +83,76 @@ ReversingLabs strongly recommends following best security practices and [definin
 
 The most common use-case for this action is to add it to the "test" stage in a workflow, after the build artifact has been created.
 
-To use the `rl-secure` security scanning functionality, a valid site-wide deployment license is required. 
+To use the `rl-secure` security scanning functionality, a valid site-wide deployment license is required.
 This type of license has two parts: the site key and the license file.
 ReversingLabs sends both parts of the license to users on request.
 Users must then encode the license file with the Base64 algorithm.
-The Base64-encoded license string and the site key must be provided to the action using [environment variables](#environment-variables). 
+The Base64-encoded license string and the site key must be provided to the action using [environment variables](#environment-variables).
+
+### Configure a package store
+
+A package store is a special directory where `rl-secure` can permanently keep your analyzed build artifacts and their scan results.
+When created, a package store is automatically organized into [a predefined structure](https://docs.secure.software/cli/commands/create#example-structure-of-a-package-store) where every analyzed artifact is registered as a **package version** and assigned a **package URL (PURL)** in the format `[pkg:type/]<project></package><@version>`.
+
+A package store is a prerequisite for [comparing build artifacts](#compare-artifacts) because the diff scan requires specifying artifacts by their PURLs and saving analysis results for each artifacts.
+
+To configure a package store, use the `rl-store` parameter. This requires either a path on the runner (if only one runner is used) or a shared storage location with NFS or CIFS (if scanning will be performed on multiple runners). **Configuring a package store only make sense on self-hosted runners.**
+
+When a package store is configured, you must provide the package URL (PURL) with the `rl-package-url` parameter when scanning an artifact to register it in the package store.
+Likewise, if you want to use the `rl-package-url` parameter, you must also set the `rl-store`.
+
+
+### Compare artifacts
+
+The `rl-secure` CLI and the `rl-scanner` Docker image both allow comparing the analysis results of two artifacts in the same `<project>/<package>` context.
+This comparison is also known as the **diff scan**.
+
+To perform a diff scan, `rl-secure` needs to preserve the results of previous scans in a package store.
+When using a package store, analysis results for every scanned artifact are accessible with the PURL in the format `<project>/<package>@<version>`.
+This lets you compare the scan results of an artifact against a previously scanned artifact in the same project and package.
+
+To compare artifacts, use the `rl-diff-with` parameter when scanning an artifact to specify the PURL of a previous version to compare against.
+The diff scan action will verify that the requested version was actually scanned before, and ignore the request for a diff scan if there are no results for the requested `<project>/<package>@<version>`.
+
+
+### Optional proxy configuration
+
+In some cases, proxy configuration may be needed to deploy and use `rl-secure`.
+You can configure proxy settings with the `rl-proxy-*` parameters for any self-hosted runner, including local GitHub Enterprise setups.
+
+When using the `rl-proxy-server` parameter, you must also specify the port with `rl-proxy-port`.
+
+If the proxy requires authentication, the proxy credentials for authentication can be configured with `rl-proxy-user` and `rl-proxy-password`.
 
 
 ### Inputs
 
-| Input parameter | Required | Description | 
+| Input parameter | Required | Description |
 | :--------- | :------ | :------ |
-| `artifact-to-scan` | Yes | The software package (build artifact) you want to scan. Provide the artifact file path relative to the `github.workspace` | 
-| `ref-sha` | No | The SHA identifier of the commit or pull request associated with the trigger event. Default value is `${{ github.event.pull_request.head.sha || github.sha }}`. For most workflows, you do not need to change the default value. | 
-| `report-path` | No | The directory where the action will store analysis reports for the build artifact. The directory must be empty. Provide the directory path relative to the `github.workspace`. Default value is `MyReportDir` | 
+| `artifact-to-scan` | Yes | The software package (build artifact) you want to scan. Provide the artifact file path relative to the `github.workspace`. |
+| `report-path` | No | The directory where the action will store analysis reports for the build artifact. The directory must be empty. Provide the directory path relative to the `github.workspace`. Default value is `MyReportDir`. |
+| `ref-sha` | No | The SHA identifier of the commit or pull request associated with the trigger event. Default value is `${{ github.event.pull_request.head.sha \|\| github.sha }}`. For most workflows, you do not need to change the default value. This value is used in generating a unique report name. |
+| `artifact-to-scan` | Yes | The software package (build artifact) you want to scan. Provide the artifact file path relative to the `github.workspace`. |
+| `report-path` | No | The directory where the action will store analysis reports for the build artifact. The directory must be empty. Provide the directory path relative to the `github.workspace`. Default value is `MyReportDir`. |
+| `rl-store` | No | If using a package store, use this parameter to provide the path to a directory where the package store has been initialized.  |
+| `rl-package-url` | No | If using a package store, use this parameter to specify the package URL (PURL) for the scanned artifact. |
+| `rl-diff-with` | No | If using a package store, use this parameter to specify the PURL of a previously scanned version of the artifact to compare (diff) against. The previous version must exist in the same project and package as the scanned artifact. |
+| `rl-verbose` | No | Set to`true` to provide more feedback in the output while running the scan. Disabled by default. |
+| `rl-proxy-server` | No | Server URL for proxy configuration (IP address or DNS name). |
+| `rl-proxy-port` | No | Network port on the proxy server for proxy configuration. Required if `rl-proxy-server` is used. |
+| `rl-proxy-user` | No | User name for proxy authentication. |
+| `rl-proxy-password` | No | Password for proxy authentication. Required if `rl-proxy-user` is used. |
 
+### Outputs
 
-### Outputs 
-
-| Output parameter | Description | 
+| Output parameter | Description |
 | :--------- | :------ |
-| `description` | The result of the action - a string terminating in FAIL or PASS. | 
-| `status` | The single-word status (as is used by the GitHub Status API), representing the result of the action. It can be any of the following: success, failure, error. **Success** indicates that the resulting string contains PASS. **Failure** indicates the resulting string contains FAIL. **Error** indicates that something went wrong during the scan and the action was not able to retrieve the resulting string. | 
+| `description` | The result of the action - a string terminating in FAIL or PASS. |
+| `status` | The single-word status (as is used by the GitHub Status API), representing the result of the action. It can be any of the following: success, failure, error. **Success** indicates that the resulting string contains PASS. **Failure** indicates the resulting string contains FAIL. **Error** indicates that something went wrong during the scan and the action was not able to retrieve the resulting string. |
 
 ### Artifacts
 
-The action creates: 
+The action creates:
 
 - a report directory in `${{ inputs.report-path }}` and a ZIP file named `report-${{ inputs.ref-sha }}` that contains analysis reports. Users can control the `report-path` as an input parameter
 
@@ -121,7 +165,7 @@ The following example is a basic GitHub workflow that runs on pull requests (PRs
 
 The workflow checks out your repository, builds an artifact, and uses the `rl-scanner-composite` GitHub action to scan the artifact with `rl-secure`.
 
-When the scan is done, analysis results are displayed in the GitHub interface, the reports are uploaded to GitHub, and the SARIF report is displayed in the list of checks. 
+When the scan is done, analysis results are displayed in the GitHub interface, the reports are uploaded to GitHub, and the SARIF report is displayed in the list of checks.
 
 
 ```
@@ -154,9 +198,9 @@ jobs:
       # Need to produce one file as the build artifact in scanfile=<relative file path>
       - name: Create the build artifact
         id: build
- 
+
         shell: bash
- 
+
         run: |
           # Prepare the build process
           python3 -m pip install --upgrade pip
@@ -166,7 +210,7 @@ jobs:
           python3 -m build
           # Produce a single artifact to scan and set the scanfile output parameter
           echo "scanfile=$( ls dist/*.whl )" >> $GITHUB_OUTPUT
-      
+
       # Use the rl-scanner-composite action
       - name: Scan the build artifact
         id: rl-scan

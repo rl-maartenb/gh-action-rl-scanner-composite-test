@@ -10,14 +10,57 @@ inputs:
   artifact-to-scan:
     description: 'Path to the package file (artifact) you want to scan'
     required: true
-  ref-sha:
-    description: 'Reference SHA of the commit or a pull request'
-    required: false
-    default: ${{ github.event.pull_request.head.sha || github.sha }}
   report-path:
     description: 'Path to a directory where the reports will be saved (must be a new directory, with a path relative to the github.workspace)'
     required: false
     default: MyReportDir
+
+  rl-store:
+    description: 'Path to a directory where a rl-store has been initialized'
+    required: false
+    default: ""
+    type: string
+  rl-diff-with:
+    description: 'Perform a diff scan against the provided version'
+    required: false
+    default: ""
+    type: string
+  rl-package-url:
+    description: 'A package url to use for this scan'
+    required: false
+    default: ""
+    type: string
+  rl-verbose:
+    description: 'Make the scanner more verbose'
+    required: false
+    default: false
+    type: bool
+
+  rl-proxy-server:
+    description: 'An optional proxy server to use'
+    required: false
+    default: ""
+    type: string
+  rl-proxy-port:
+    description: 'An optional proxy server port to use'
+    required: false
+    default: ""
+    type: string
+  rl-proxy-user:
+    description: 'An optional proxy server user to use'
+    required: false
+    default: ""
+    type: string
+  rl-proxy-password:
+    description: 'An optional proxy server password to use'
+    required: false
+    default: ""
+    type: string
+
+  ref-sha:
+    description: 'Reference SHA of the commit or pull request'
+    required: false
+    default: ${{ github.event.pull_request.head.sha || github.sha }}
 
 outputs:
   description:
@@ -39,19 +82,28 @@ runs:
         addHoldComment: "true"
 
     # -------------------------------------------
-    # Run the reversinglabs/rl-scanner
-    - name: Scan with rl-scanner
+    # Run the reversinglabs/rl-scanner using the scan only action
+    - name: ReversingLabs apply rl-scanner to the build artifact
       id: scan
-      shell: bash
-      run: $GITHUB_ACTION_PATH/doScanAction.sh -f "${{ inputs.artifact-to-scan }}" -r "${{ inputs.report-path }}"
+      uses: reversinglabs/gh-action-rl-scanner-only@v1
+      with:
+        artifact-to-scan: ${{ inputs.artifact-to-scan }}
+        report-path: ${{ inputs.report-path }}
+        rl-verbose: ${{ inputs.rl-verbose }}
+        rl-store: ${{ inputs.rl-store }}
+        rl-package-url: ${{ inputs.rl-package-url }}
+        rl-diff-with: ${{ inputs.rl-diff-with }}
+        rl-proxy-server: ${{ inputs.rl-proxy-server }}
+        rl-proxy-port: ${{ inputs.rl-proxy-port }}
+        rl-proxy-user: ${{ inputs.rl-proxy-user }}
+        rl-proxy-password: ${{ inputs.rl-proxy-password }}
 
     # -------------------------------------
     # Upload the secure.software report to GitHub
     # Note: It is currently not possible to get the URL for the uploaded asset
     - name: Upload the rl-scanner report
       if: success() || failure()
-      uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce # v3.1.2
-
+      uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
       with:
         name: "report-${{ inputs.ref-sha }}"
         path: "${{ inputs.report-path }}"
@@ -60,8 +112,7 @@ runs:
     # Upload the secure.software SARIF report to GitHub
     - name: Upload the SARIF report
       if: success() || failure()
-      uses: github/codeql-action/upload-sarif@cdcdbb579706841c47f7063dda365e292e5cad7a # v2.13.4
-
+      uses: github/codeql-action/upload-sarif@8e0b1c74b1d5a0077b04d064c76ee714d3da7637 # v2.14.6
       with:
         sarif_file: "${{ inputs.report-path }}/report.sarif.json"
         category: rl-secure-scanner
@@ -71,7 +122,6 @@ runs:
     - name: Set the analysis status
       if: success() || failure()
       uses: ouzi-dev/commit-status-updater@219d3f932547cad092e384c7a36bf4d963739c35 # v2.0.1
-
       with:
         addHoldComment: "true"
         description: ${{ steps.scan.outputs.description }}
