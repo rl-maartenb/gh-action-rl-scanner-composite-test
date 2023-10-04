@@ -132,8 +132,6 @@ If the proxy requires authentication, the proxy credentials for authentication c
 | `artifact-to-scan` | Yes | The software package (build artifact) you want to scan. Provide the artifact file path relative to the `github.workspace`. |
 | `report-path` | No | The directory where the action will store analysis reports for the build artifact. The directory must be empty. Provide the directory path relative to the `github.workspace`. Default value is `MyReportDir`. |
 | `ref-sha` | No | The SHA identifier of the commit or pull request associated with the trigger event. Default value is `${{ github.event.pull_request.head.sha \|\| github.sha }}`. For most workflows, you do not need to change the default value. This value is used in generating a unique report name. |
-| `artifact-to-scan` | Yes | The software package (build artifact) you want to scan. Provide the artifact file path relative to the `github.workspace`. |
-| `report-path` | No | The directory where the action will store analysis reports for the build artifact. The directory must be empty. Provide the directory path relative to the `github.workspace`. Default value is `MyReportDir`. |
 | `rl-store` | No | If using a package store, use this parameter to provide the path to a directory where the package store has been initialized.  |
 | `rl-package-url` | No | If using a package store, use this parameter to specify the package URL (PURL) for the scanned artifact. |
 | `rl-diff-with` | No | If using a package store, use this parameter to specify the PURL of a previously scanned version of the artifact to compare (diff) against. The previous version must exist in the same project and package as the scanned artifact. |
