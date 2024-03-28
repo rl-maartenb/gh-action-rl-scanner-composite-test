@@ -1,6 +1,6 @@
 name: 'gh-action-rl-scanner-composite'
 author: 'ReversingLabs'
-description: 'Scan an artifact with ReversingLabs secure.software CLI'
+description: 'Scan an artifact with ReversingLabs Spectra Assure CLI'
 
 branding:
   icon: 'shield'
