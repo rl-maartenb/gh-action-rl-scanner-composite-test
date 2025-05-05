@@ -1,4 +1,4 @@
-# ReversingLabs GitHub Action: rl-scanner-composite
+# rl-maartenb GitHub Action: rl-scanner-composite-test
 
 ReversingLabs provides officially supported GitHub Actions for faster and easier deployment of the `rl-secure` solution in CI/CD workflows.
 
