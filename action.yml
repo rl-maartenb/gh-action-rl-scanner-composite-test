@@ -131,9 +131,7 @@ runs:
       with:
         comment-id: ${{ steps.fc.outputs.comment-id }}
         issue-number: ${{ github.event.pull_request.number }}
-        body: |
-          Build output
-          ${{ steps.build.outputs.build-log }}
+        body-path: ${{ steps.build.outputs.build-log }}
         edit-mode: replace
       if: github.event_name == 'pull_request'
         
