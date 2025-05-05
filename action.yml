@@ -1,5 +1,5 @@
-name: 'gh-action-rl-scanner-composite'
-author: 'ReversingLabs'
+name: 'gh-action-rl-scanner-composite-test'
+author: 'rl-maartenb'
 description: 'Scan an artifact with ReversingLabs Spectra Assure CLI'
 
 branding:
@@ -117,6 +117,24 @@ runs:
         sarif_file: "${{ inputs.report-path }}/report.sarif.json"
         category: rl-secure-scanner
 
+    - name: Find Comment
+      uses: peter-evans/find-comment@v3
+      id: fc
+      with:
+        issue-number: ${{ github.event.pull_request.number }}
+        comment-author: 'github-actions[bot]'
+        body-includes: Build output
+
+    - name: Create or update comment
+      uses: peter-evans/create-or-update-comment@v4
+      with:
+        comment-id: ${{ steps.fc.outputs.comment-id }}
+        issue-number: ${{ github.event.pull_request.number }}
+        body: |
+          Build output
+          ${{ steps.build.outputs.build-log }}
+        edit-mode: replace
+        
     # -------------------------------------
     # Update the status from pending to failure/success and set the descriptive text
     - name: Set the analysis status
