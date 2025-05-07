@@ -119,7 +119,7 @@ runs:
 
     - name: produce a output md file
       id: make_md_from_json
-      uses: rl-maartenb/gh-make-comment-from-rl-json-test@v0.0.3
+      uses: rl-maartenb/gh-make-comment-from-rl-json-test@v0.0.4
       with:
         rl_json_file_path: 'tests/report.rl.json'
     
