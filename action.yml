@@ -116,13 +116,14 @@ runs:
       with:
         sarif_file: "${{ inputs.report-path }}/report.sarif.json"
         category: rl-secure-scanner
-
+    
     - name: produce a output md file
       id: make_md_from_json
-      uses: rl-maartenb/gh-make-comment-from-rl-json-test@v0.0.4
+      uses: rl-maartenb/test-action-ts-rl-maartenb@v0.0.1
       with:
-        rl_json_file_path: 'tests/report.rl.json'
-    
+        rl_json_path: "${{ inputs.report-path }}/report.rl.json"
+        md_report_path: './report-rl-json.md'
+
     - name: Find Comment
       uses: peter-evans/find-comment@v3
       id: fc
@@ -137,7 +138,7 @@ runs:
       with:
         comment-id: ${{ steps.fc.outputs.comment-id }}
         issue-number: ${{ github.event.pull_request.number }}
-        body-path: ${{ steps.make_md_from_json.outputs.simple_summary_markdown }}
+        body-path: './report-rl-json.md'
         edit-mode: replace
       if: github.event_name == 'pull_request'
         
